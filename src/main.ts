@@ -195,10 +195,11 @@ function getCurrentFormState(): Omit<ParsedOtpAuth, "issuer" | "account"> {
   const val = mainInput.value.trim();
   let secret = val;
 
-  const match = val.match(/(otpauth:\/\/[^\s'"><\u4e00-\u9fa5]+)/i);
+  // 放宽正则，捕获一整行，防止带有非标准字符/空格导致截断
+  const match = val.match(/(otpauth:\/\/[^\r\n]+)/i);
   if (match) {
     try {
-      secret = parseOtpAuthUri(match[1]).secret;
+      secret = parseOtpAuthUri(match[1].trim()).secret;
     } catch {
       secret = ""; 
     }
@@ -388,42 +389,63 @@ function bindEvents(): void {
     themeToggle.innerHTML = next === "dark" ? ICON_MOON : ICON_SUN;
   });
 
-  // --- 终极增强版智能正则匹配 ---
+  // --- 【核武器级防御：轮询与多事件并行】 ---
   let lastParsedValue = "";
+  let pollTimer: number | null = null;
 
   const handleSmartInput = () => {
-    setTimeout(() => {
-      const val = mainInput.value.trim();
-      
-      if (!val || val === lastParsedValue) return;
-      
-      const match = val.match(/(otpauth:\/\/[^\s'"><\u4e00-\u9fa5]+)/i);
-      
-      if (match) {
-        try {
-          const parsed = parseOtpAuthUri(match[1]);
-          fillAdvancedForm(parsed);
-          setMessage("setupMessage", "已智能识别链接，并应用高级配置", "success");
-          lastParsedValue = val; 
-        } catch {
-          setMessage("setupMessage", ""); 
-        }
-      } else {
-        setMessage("setupMessage", "");
-        lastParsedValue = ""; 
+    const val = mainInput.value.trim();
+    if (!val || val === lastParsedValue) return;
+    
+    // 放宽正则，完整提取整行，防乱码中断
+    const match = val.match(/(otpauth:\/\/[^\r\n]+)/i);
+    
+    if (match) {
+      try {
+        const parsed = parseOtpAuthUri(match[1].trim());
+        fillAdvancedForm(parsed);
+        setMessage("setupMessage", "已智能识别链接，并应用高级配置", "success");
+        lastParsedValue = val; 
+      } catch {
+        setMessage("setupMessage", ""); 
       }
-    }, 50);
+    } else {
+      setMessage("setupMessage", "");
+      lastParsedValue = ""; 
+    }
   };
 
-  // 监听几乎所有可能改变内容的输入法与手势事件
-  const inputEvents = ['input', 'paste', 'change', 'keyup', 'blur'];
+  // 1. 常规事件触发（针对正常浏览器）
+  const inputEvents = ['input', 'paste', 'change', 'keyup'];
   inputEvents.forEach(evt => {
-    mainInput.addEventListener(evt, handleSmartInput);
+    mainInput.addEventListener(evt, () => setTimeout(handleSmartInput, 100));
   });
 
-  clearBtn.addEventListener("click", () => resetForm());
+  // 2. 无脑轮询触发（针对被魔改不发事件的“毒瘤”浏览器）
+  // 只要用户点进了输入框，我们每秒查两次有没有东西贴进来
+  mainInput.addEventListener('focus', () => {
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = window.setInterval(handleSmartInput, 500);
+  });
+
+  mainInput.addEventListener('blur', () => {
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+    setTimeout(handleSmartInput, 100);
+  });
+  // ----------------------------------------
+
+  clearBtn.addEventListener("click", () => {
+    resetForm();
+    lastParsedValue = "";
+  });
 
   nextBtn.addEventListener("click", () => {
+    // 3. 点击按钮时，强制拦截预解析一次！双重保险
+    handleSmartInput();
+
     const state = getCurrentFormState();
     const rawVal = mainInput.value.trim();
     
