@@ -186,7 +186,6 @@ function setMessage(viewId: "setupMessage" | "displayMessage", text: string, typ
   el.textContent = text;
 }
 
-// 提取当前表单状态
 function getCurrentFormState(): Omit<ParsedOtpAuth, "issuer" | "account"> {
   const mainInput = document.querySelector<HTMLTextAreaElement>("#mainInput")!;
   const algoSelectVal = document.querySelector<HTMLDivElement>("#algorithmSelect")!.dataset.value;
@@ -214,7 +213,6 @@ function getCurrentFormState(): Omit<ParsedOtpAuth, "issuer" | "account"> {
   };
 }
 
-// 修改自定义下拉框的值
 function setCustomSelectValue(id: string, value: string) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -258,6 +256,11 @@ async function refreshOtp(): Promise<void> {
   const state = getCurrentFormState();
   qs<HTMLElement>("#configText").textContent = `${state.algorithm} • ${state.digits}位 • ${state.period}s`;
 
+  // 缓存 DOM 节点
+  const codeTextEl = qs<HTMLDivElement>("#codeText");
+  const remainingTextEl = qs<HTMLElement>("#remainingText");
+  const progressBar = qs<HTMLDivElement>("#progressBar");
+
   try {
     const result = await generateTotp({
       secret: state.secret,
@@ -266,18 +269,34 @@ async function refreshOtp(): Promise<void> {
       algorithm: state.algorithm
     });
 
-    qs<HTMLDivElement>("#codeText").textContent = groupCode(result.code);
-    qs<HTMLElement>("#remainingText").textContent = `${result.remainingSeconds} s`;
+    codeTextEl.textContent = groupCode(result.code);
+    remainingTextEl.textContent = `${result.remainingSeconds} s`;
 
     const progress = result.remainingSeconds / state.period;
-    const progressBar = qs<HTMLDivElement>("#progressBar");
     progressBar.style.transition = result.remainingSeconds === state.period ? "none" : "transform 1s linear";
     progressBar.style.transform = `scaleX(${progress})`;
 
+    // <= 3秒 红色警告状态切换
+    if (result.remainingSeconds <= 3) {
+      codeTextEl.classList.add("text-danger-flash");
+      remainingTextEl.classList.add("text-danger-flash");
+      progressBar.classList.add("bg-danger");
+    } else {
+      codeTextEl.classList.remove("text-danger-flash");
+      remainingTextEl.classList.remove("text-danger-flash");
+      progressBar.classList.remove("bg-danger");
+    }
+
   } catch (error) {
-    qs<HTMLDivElement>("#codeText").textContent = "------";
-    qs<HTMLElement>("#remainingText").textContent = "-- s";
-    qs<HTMLDivElement>("#progressBar").style.transform = "scaleX(0)";
+    codeTextEl.textContent = "------";
+    remainingTextEl.textContent = "-- s";
+    progressBar.style.transform = "scaleX(0)";
+    
+    // 如果发生错误，也要清除警告状态
+    codeTextEl.classList.remove("text-danger-flash");
+    remainingTextEl.classList.remove("text-danger-flash");
+    progressBar.classList.remove("bg-danger");
+
     const message = error instanceof Error ? error.message : "生成验证码失败。";
     setMessage("displayMessage", message, "error");
   }
@@ -367,7 +386,6 @@ function bindEvents(): void {
     const current = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
     const next = current === "dark" ? "light" : "dark";
     setTheme(next);
-    // 动态切换 SVG 图标
     themeToggle.innerHTML = next === "dark" ? ICON_MOON : ICON_SUN;
   });
 
@@ -434,7 +452,6 @@ function bootstrap(): void {
   const theme = getStoredTheme();
   setTheme(theme);
   
-  // 初始化时渲染对应主题的 SVG 图标
   document.querySelector<HTMLButtonElement>("#themeToggle")!.innerHTML = theme === "dark" ? ICON_MOON : ICON_SUN;
   
   bindEvents();
