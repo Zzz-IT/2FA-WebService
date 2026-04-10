@@ -222,21 +222,24 @@ body, .view, input, select, textarea, .btn, .notice, .theme-btn {
   padding: 16px;
   outline: none;
   font: inherit;
+  box-shadow: none; /* 强制覆盖某些手机自带的内阴影 */
 }
 
+/* 彻底重置手机浏览器 select 原生样式 */
 .field select {
-  appearance: none;
   -webkit-appearance: none;
-  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 16px center;
+  -moz-appearance: none;
+  appearance: none;
+  background: var(--panel-soft) url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 16px center;
   background-size: 16px;
   padding-right: 48px; 
   cursor: pointer;
 }
 
+/* 暗色模式下拉框箭头变色 */
 :root[data-theme="dark"] .field select {
-  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background: var(--panel-soft) url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 16px center;
+  background-size: 16px;
 }
 
 .field input:focus,
@@ -293,7 +296,7 @@ body, .view, input, select, textarea, .btn, .notice, .theme-btn {
   opacity: 0.9;
 }
 
-/* --- 彻底修复的弹出层 Modal --- */
+/* --- 弹出层 Modal --- */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -377,20 +380,24 @@ body, .view, input, select, textarea, .btn, .notice, .theme-btn {
 }
 
 .code-wrap {
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 20px;
-  justify-items: center;
+  width: 100%;
+  overflow: hidden; /* 防止溢出撑破页面 */
 }
 
 .code {
-  font-size: clamp(3.5rem, 12vw, 5.5rem);
-  letter-spacing: 0.12em;
+  font-size: clamp(2.5rem, 10vw, 5.5rem); /* 缩小下限，适应小屏手机 */
+  letter-spacing: 0.08em; /* 减小间距，防止折行 */
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   background: linear-gradient(135deg, var(--text), var(--muted));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  line-height: 1;
+  line-height: 1.1;
+  white-space: nowrap; /* 强制不换行 */
 }
 
 .progress-wrap {
