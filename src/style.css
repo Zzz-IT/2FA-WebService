@@ -139,14 +139,14 @@ body, .view, input, textarea, .btn, .notice, .theme-btn {
   font-size: 1.05rem;
 }
 
-/* 主题切换按钮：变为居中正方/圆角形 */
+/* 主题切换按钮 */
 .theme-btn {
   border: 1px solid var(--line);
   background: var(--panel);
   backdrop-filter: blur(12px);
   color: var(--text);
   border-radius: 16px;
-  padding: 12px; /* 等宽内边距 */
+  padding: 12px; 
   cursor: pointer;
   box-shadow: var(--shadow);
   display: inline-flex;
@@ -504,6 +504,30 @@ body, .view, input, textarea, .btn, .notice, .theme-btn {
   transition: transform 1s linear; 
 }
 
+/* --- 临近过期警告动效 (<= 3s) --- */
+@keyframes flash-danger {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.text-danger-flash {
+  color: var(--danger) !important;
+  animation: flash-danger 0.8s infinite ease-in-out;
+}
+
+/* 针对带有渐变剪裁的文本特殊处理覆盖颜色 */
+.code.text-danger-flash {
+  background: var(--danger) !important;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: flash-danger 0.8s infinite ease-in-out;
+}
+
+.bg-danger {
+  background: var(--danger) !important;
+}
+
+/* --- 信息与辅助 --- */
 .message {
   min-height: 24px;
   font-size: 0.95rem;
