@@ -10,7 +10,7 @@
   --primary-text: #ffffff;
   --danger: #b91c1c;
   --success: #047857;
-  --shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
   
   --blob-1: rgba(56, 189, 248, 0.45);
   --blob-2: rgba(167, 139, 250, 0.40);
@@ -28,7 +28,7 @@
   --primary-text: #111827;
   --danger: #f87171;
   --success: #34d399;
-  --shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   
   --blob-1: rgba(56, 189, 248, 0.25);
   --blob-2: rgba(167, 139, 250, 0.25);
@@ -53,36 +53,24 @@ body {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  /* 基础平滑过渡 */
-  transition: background-color 0.5s ease, color 0.5s ease;
 }
 
-/* --- 全局文本与 SVG 丝滑过渡 --- */
-h1, .subtitle, .meta, label, .progress-text, .help, .message, .close-btn, .code {
-  transition: color 0.5s ease;
-}
-svg {
-  transition: stroke 0.5s ease, fill 0.5s ease, color 0.5s ease;
-}
-
-/* --- 流动背景平滑过渡 --- */
+/* --- 性能优化：降低模糊半径，减轻 GPU 负担 --- */
 .bg-blobs {
   position: fixed;
   inset: 0;
   z-index: -1;
   overflow: hidden;
   background-color: var(--bg);
-  transition: background-color 0.5s ease;
+  transition: background-color 0.3s ease;
 }
 
 .blob {
   position: absolute;
   border-radius: 50%;
-  filter: blur(100px);
+  filter: blur(60px); /* 从 100px 降至 60px，极大提升性能 */
   will-change: transform;
   animation: float 10s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
-  /* 球体颜色变化设为 0.8s，比界面稍微慢一点点，视觉更高级 */
-  transition: background-color 0.8s ease; 
 }
 
 .blob-1 { background-color: var(--blob-1); width: 60vw; height: 60vw; top: -10%; left: -10%; }
@@ -142,7 +130,7 @@ svg {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55), background-color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease, color 0.5s ease;
+  transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
 .theme-btn svg {
@@ -165,15 +153,14 @@ svg {
 .view {
   display: none;
   background-color: var(--panel);
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
+  backdrop-filter: blur(16px); /* 从 28px 降至 16px，提升老手机性能 */
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--line);
   border-radius: 28px;
   box-shadow: var(--shadow);
   padding: 36px; 
   gap: 24px;
-  animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  transition: background-color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
+  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .view.active {
@@ -193,7 +180,6 @@ svg {
   color: var(--muted);
   line-height: 1.6;
   font-size: 0.95rem;
-  transition: background-color 0.5s ease, border-color 0.5s ease, color 0.5s ease;
 }
 
 .form-grid {
@@ -223,7 +209,7 @@ svg {
   outline: none;
   font: inherit;
   box-shadow: none; 
-  transition: background-color 0.5s ease, border-color 0.5s ease, box-shadow 0.2s, color 0.5s ease;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .field input:focus,
@@ -247,7 +233,6 @@ svg {
 .select-trigger {
   width: 100%;
   border: 1px solid var(--line);
-  /* 拆分背景属性以支持平滑过渡 */
   background-color: var(--panel-soft);
   background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
   background-repeat: no-repeat;
@@ -259,7 +244,7 @@ svg {
   padding-right: 48px;
   cursor: pointer;
   user-select: none;
-  transition: background-color 0.5s ease, border-color 0.5s ease, box-shadow 0.2s, color 0.5s ease;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 :root[data-theme="dark"] .select-trigger {
@@ -277,8 +262,8 @@ svg {
   left: 0;
   right: 0;
   background-color: var(--panel);
-  backdrop-filter: blur(40px);
-  -webkit-backdrop-filter: blur(40px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--line);
   border-radius: 16px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
@@ -286,8 +271,7 @@ svg {
   opacity: 0;
   visibility: hidden;
   transform: translateY(-10px);
-  /* 显式列出过渡属性，防止 all 覆盖背景色 0.5s 的过渡 */
-  transition: opacity 0.2s, visibility 0.2s, transform 0.2s, background-color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
+  transition: opacity 0.2s, visibility 0.2s, transform 0.2s;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -302,7 +286,6 @@ svg {
 .select-option {
   padding: 14px 16px;
   cursor: pointer;
-  transition: background-color 0.2s, color 0.2s;
   font-size: 0.95rem;
 }
 
@@ -340,7 +323,7 @@ svg {
   cursor: pointer;
   flex: 1;
   font: inherit;
-  transition: transform 0.2s, opacity 0.2s, background-color 0.5s ease, color 0.5s ease, border-color 0.5s ease;
+  transition: transform 0.1s;
   min-width: 100px;
 }
 
@@ -378,8 +361,8 @@ svg {
   width: 100vw;
   height: 100vh;
   background-color: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -397,8 +380,8 @@ svg {
 
 .modal {
   background-color: var(--panel);
-  backdrop-filter: blur(32px);
-  -webkit-backdrop-filter: blur(32px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--line);
   border-radius: 28px;
   padding: 32px;
@@ -406,7 +389,7 @@ svg {
   max-width: 440px;
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
   transform: translateY(20px) scale(0.95);
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   display: grid;
   gap: 20px;
 }
@@ -462,20 +445,17 @@ svg {
   overflow: hidden; 
 }
 
+/* 彻底恢复原版好看的背景渐变截取 */
 .code {
   font-size: clamp(2.5rem, 10vw, 5.5rem); 
   letter-spacing: 0.08em; 
   font-weight: 800;
   font-variant-numeric: tabular-nums;
-  /* 移除原有的固定渐变背景，改用高级阴影叠加和支持平滑过渡的 color */
-  color: var(--text);
-  text-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  background: linear-gradient(135deg, var(--text), var(--muted));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
   line-height: 1.1;
   white-space: nowrap; 
-}
-
-:root[data-theme="dark"] .code {
-  text-shadow: 0 4px 20px rgba(255,255,255,0.05);
 }
 
 .progress-wrap {
@@ -496,7 +476,6 @@ svg {
   border-radius: 999px;
   background-color: var(--line);
   overflow: hidden;
-  transition: background-color 0.5s ease;
 }
 
 .progress-bar {
@@ -504,24 +483,27 @@ svg {
   width: 100%;
   background-color: var(--text);
   transform-origin: left center;
-  /* 叠加过渡：宽度的变化是 1s，颜色随主题切换是 0.5s */
-  transition: transform 1s linear, background-color 0.5s ease; 
+  transition: transform 1s linear; 
 }
 
-/* --- 临近过期警告动效 (<= 3s) --- */
-@keyframes flash-danger {
+/* --- 硬件加速的高级警告动效 (<= 3s) --- */
+/* 使用 opacity 代替颜色渐变重绘，老手机也不会卡 */
+@keyframes flash-opacity {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+  50% { opacity: 0.4; }
 }
 
 .text-danger-flash {
   color: var(--danger) !important;
-  animation: flash-danger 1s infinite ease-in-out; 
+  animation: flash-opacity 1s infinite ease-in-out; 
 }
 
+/* 完美解决验证码块红色的渐变闪烁 */
 .code.text-danger-flash {
-  color: var(--danger) !important;
-  animation: flash-danger 1s infinite ease-in-out; 
+  background: linear-gradient(135deg, var(--danger), #ef4444) !important; 
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  animation: flash-opacity 1s infinite ease-in-out; 
 }
 
 .bg-danger {
