@@ -120,7 +120,6 @@ function renderApp(): void {
     </div>
   `;
 
-  // 将 Modal 移出 #app 以免被布局影响
   const oldModal = document.getElementById("settingsModal");
   if (oldModal) oldModal.remove();
 
@@ -196,8 +195,7 @@ function getCurrentFormState(): Omit<ParsedOtpAuth, "issuer" | "account"> {
   const val = mainInput.value.trim();
   let secret = val;
 
-  // 使用强健正则，确保即使用户输入了一段杂乱文本，只要包含链接也能提取出来
-  const match = val.match(/(otpauth:\/\/\S+)/i);
+  const match = val.match(/(otpauth:\/\/[^\s'"><\u4e00-\u9fa5]+)/i);
   if (match) {
     try {
       secret = parseOtpAuthUri(match[1]).secret;
@@ -390,29 +388,38 @@ function bindEvents(): void {
     themeToggle.innerHTML = next === "dark" ? ICON_MOON : ICON_SUN;
   });
 
-  // --- 智能正则匹配：全面覆盖输入、粘贴、改变事件 ---
+  // --- 终极增强版智能正则匹配 ---
+  let lastParsedValue = "";
+
   const handleSmartInput = () => {
     setTimeout(() => {
       const val = mainInput.value.trim();
-      const match = val.match(/(otpauth:\/\/\S+)/i);
+      
+      if (!val || val === lastParsedValue) return;
+      
+      const match = val.match(/(otpauth:\/\/[^\s'"><\u4e00-\u9fa5]+)/i);
       
       if (match) {
         try {
           const parsed = parseOtpAuthUri(match[1]);
           fillAdvancedForm(parsed);
           setMessage("setupMessage", "已智能识别链接，并应用高级配置", "success");
+          lastParsedValue = val; 
         } catch {
           setMessage("setupMessage", ""); 
         }
       } else {
         setMessage("setupMessage", "");
+        lastParsedValue = ""; 
       }
-    }, 0);
+    }, 50);
   };
 
-  mainInput.addEventListener("input", handleSmartInput);
-  mainInput.addEventListener("paste", handleSmartInput);
-  mainInput.addEventListener("change", handleSmartInput);
+  // 监听几乎所有可能改变内容的输入法与手势事件
+  const inputEvents = ['input', 'paste', 'change', 'keyup', 'blur'];
+  inputEvents.forEach(evt => {
+    mainInput.addEventListener(evt, handleSmartInput);
+  });
 
   clearBtn.addEventListener("click", () => resetForm());
 
