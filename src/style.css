@@ -512,15 +512,14 @@ body, .view, input, textarea, .btn, .notice, .theme-btn {
 
 .text-danger-flash {
   color: var(--danger) !important;
-  /* 将 0.8s 修改为 1s，闪烁速度放慢 */
   animation: flash-danger 1s infinite ease-in-out; 
 }
 
+/* 修复文本裁剪背景导致的长方形块问题 */
 .code.text-danger-flash {
   background-image: none !important; 
   -webkit-text-fill-color: var(--danger) !important; 
   color: var(--danger) !important;
-  /* 将 0.8s 修改为 1s，闪烁速度放慢 */
   animation: flash-danger 1s infinite ease-in-out; 
 }
 
