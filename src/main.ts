@@ -120,6 +120,7 @@ function renderApp(): void {
     </div>
   `;
 
+  // 将 Modal 移出 #app 以免被布局影响
   const oldModal = document.getElementById("settingsModal");
   if (oldModal) oldModal.remove();
 
@@ -195,9 +196,11 @@ function getCurrentFormState(): Omit<ParsedOtpAuth, "issuer" | "account"> {
   const val = mainInput.value.trim();
   let secret = val;
 
-  if (val.startsWith("otpauth://")) {
+  // 使用强健正则，确保即使用户输入了一段杂乱文本，只要包含链接也能提取出来
+  const match = val.match(/(otpauth:\/\/\S+)/i);
+  if (match) {
     try {
-      secret = parseOtpAuthUri(val).secret;
+      secret = parseOtpAuthUri(match[1]).secret;
     } catch {
       secret = ""; 
     }
@@ -256,7 +259,6 @@ async function refreshOtp(): Promise<void> {
   const state = getCurrentFormState();
   qs<HTMLElement>("#configText").textContent = `${state.algorithm} • ${state.digits}位 • ${state.period}s`;
 
-  // 缓存 DOM 节点
   const codeTextEl = qs<HTMLDivElement>("#codeText");
   const remainingTextEl = qs<HTMLElement>("#remainingText");
   const progressBar = qs<HTMLDivElement>("#progressBar");
@@ -276,7 +278,7 @@ async function refreshOtp(): Promise<void> {
     progressBar.style.transition = result.remainingSeconds === state.period ? "none" : "transform 1s linear";
     progressBar.style.transform = `scaleX(${progress})`;
 
-    // <= 3秒 红色警告状态切换
+    // <= 3秒 红色闪烁警告
     if (result.remainingSeconds <= 3) {
       codeTextEl.classList.add("text-danger-flash");
       remainingTextEl.classList.add("text-danger-flash");
@@ -292,7 +294,6 @@ async function refreshOtp(): Promise<void> {
     remainingTextEl.textContent = "-- s";
     progressBar.style.transform = "scaleX(0)";
     
-    // 如果发生错误，也要清除警告状态
     codeTextEl.classList.remove("text-danger-flash");
     remainingTextEl.classList.remove("text-danger-flash");
     progressBar.classList.remove("bg-danger");
@@ -389,20 +390,29 @@ function bindEvents(): void {
     themeToggle.innerHTML = next === "dark" ? ICON_MOON : ICON_SUN;
   });
 
-  mainInput.addEventListener("input", () => {
-    const val = mainInput.value.trim();
-    if (val.startsWith("otpauth://")) {
-      try {
-        const parsed = parseOtpAuthUri(val);
-        fillAdvancedForm(parsed);
-        setMessage("setupMessage", "已智能识别链接，并应用高级配置", "success");
-      } catch {
-        setMessage("setupMessage", ""); 
+  // --- 智能正则匹配：全面覆盖输入、粘贴、改变事件 ---
+  const handleSmartInput = () => {
+    setTimeout(() => {
+      const val = mainInput.value.trim();
+      const match = val.match(/(otpauth:\/\/\S+)/i);
+      
+      if (match) {
+        try {
+          const parsed = parseOtpAuthUri(match[1]);
+          fillAdvancedForm(parsed);
+          setMessage("setupMessage", "已智能识别链接，并应用高级配置", "success");
+        } catch {
+          setMessage("setupMessage", ""); 
+        }
+      } else {
+        setMessage("setupMessage", "");
       }
-    } else {
-      setMessage("setupMessage", "");
-    }
-  });
+    }, 0);
+  };
+
+  mainInput.addEventListener("input", handleSmartInput);
+  mainInput.addEventListener("paste", handleSmartInput);
+  mainInput.addEventListener("change", handleSmartInput);
 
   clearBtn.addEventListener("click", () => resetForm());
 
