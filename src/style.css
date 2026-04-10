@@ -55,7 +55,7 @@ body {
   padding: 24px;
 }
 
-body, .view, input, select, textarea, .btn, .notice, .theme-btn {
+body, .view, input, textarea, .btn, .notice, .theme-btn {
   transition: background-color 0.5s ease, color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
 }
 
@@ -212,8 +212,7 @@ body, .view, input, select, textarea, .btn, .notice, .theme-btn {
 }
 
 .field input,
-.field textarea,
-.field select {
+.field textarea {
   width: 100%;
   border: 1px solid var(--line);
   background: var(--panel-soft);
@@ -222,29 +221,11 @@ body, .view, input, select, textarea, .btn, .notice, .theme-btn {
   padding: 16px;
   outline: none;
   font: inherit;
-  box-shadow: none; /* 强制覆盖某些手机自带的内阴影 */
-}
-
-/* 彻底重置手机浏览器 select 原生样式 */
-.field select {
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  background: var(--panel-soft) url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 16px center;
-  background-size: 16px;
-  padding-right: 48px; 
-  cursor: pointer;
-}
-
-/* 暗色模式下拉框箭头变色 */
-:root[data-theme="dark"] .field select {
-  background: var(--panel-soft) url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 16px center;
-  background-size: 16px;
+  box-shadow: none; 
 }
 
 .field input:focus,
-.field textarea:focus,
-.field select:focus {
+.field textarea:focus {
   border-color: var(--muted);
   box-shadow: 0 0 0 2px rgba(107, 114, 128, 0.2);
 }
@@ -255,6 +236,80 @@ body, .view, input, select, textarea, .btn, .notice, .theme-btn {
   line-height: 1.5;
 }
 
+/* --- 自定义下拉框组件 --- */
+.custom-select {
+  position: relative;
+  width: 100%;
+}
+
+.select-trigger {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: var(--panel-soft) url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 16px center;
+  background-size: 16px;
+  color: var(--text);
+  border-radius: 20px;
+  padding: 16px;
+  padding-right: 48px;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.5s;
+}
+
+:root[data-theme="dark"] .select-trigger {
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+.custom-select.open .select-trigger {
+  border-color: var(--muted);
+  box-shadow: 0 0 0 2px rgba(107, 114, 128, 0.2);
+}
+
+.select-options {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: var(--panel);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  z-index: 10000;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.custom-select.open .select-options {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.select-option {
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  font-size: 0.95rem;
+}
+
+.select-option:hover {
+  background: rgba(107, 114, 128, 0.15);
+}
+
+.select-option.active {
+  color: var(--text);
+  background: rgba(107, 114, 128, 0.25);
+  font-weight: 600;
+}
+
+/* --- 行列与按钮 --- */
 .row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -280,6 +335,19 @@ body, .view, input, select, textarea, .btn, .notice, .theme-btn {
   font: inherit;
   transition: transform 0.2s, background-color 0.3s, color 0.3s;
   min-width: 100px;
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-icon svg {
+  width: 18px;
+  height: 18px;
+  opacity: 0.8;
 }
 
 .btn:active {
@@ -385,19 +453,19 @@ body, .view, input, select, textarea, .btn, .notice, .theme-btn {
   align-items: center;
   gap: 20px;
   width: 100%;
-  overflow: hidden; /* 防止溢出撑破页面 */
+  overflow: hidden; 
 }
 
 .code {
-  font-size: clamp(2.5rem, 10vw, 5.5rem); /* 缩小下限，适应小屏手机 */
-  letter-spacing: 0.08em; /* 减小间距，防止折行 */
+  font-size: clamp(2.5rem, 10vw, 5.5rem); 
+  letter-spacing: 0.08em; 
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   background: linear-gradient(135deg, var(--text), var(--muted));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   line-height: 1.1;
-  white-space: nowrap; /* 强制不换行 */
+  white-space: nowrap; 
 }
 
 .progress-wrap {
