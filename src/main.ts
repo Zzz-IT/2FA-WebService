@@ -186,6 +186,45 @@ function setMessage(viewId: "setupMessage" | "displayMessage", text: string, typ
   el.textContent = text;
 }
 
+// 💥 核武器降级方案：安全解析引擎
+// 完全绕过浏览器内置的 URL API，防止安卓老旧内核报错
+function extractSafeUriData(text: string): Partial<ParsedOtpAuth> | null {
+  // 严格匹配链接，防止后面的空格或中文字符混入
+  const match = text.match(/(otpauth:\/\/[^\s'"><\u4e00-\u9fa5\\]+)/i);
+  if (!match) return null;
+
+  const cleanUri = match[1].trim();
+
+  try {
+    // 首先尝试标准解析方案 (对现代浏览器)
+    return parseOtpAuthUri(cleanUri);
+  } catch (err) {
+    // 降级方案：手动正则硬提取参数，无视协议头规范
+    const secretMatch = cleanUri.match(/[?&]secret=([^&]+)/i);
+    if (!secretMatch) return null;
+
+    const parsed: Partial<ParsedOtpAuth> = { 
+      secret: secretMatch[1] 
+    };
+
+    const algoMatch = cleanUri.match(/[?&]algorithm=([^&]+)/i);
+    if (algoMatch) {
+      const algo = algoMatch[1].toUpperCase();
+      if (algo === "SHA1" || algo === "SHA256" || algo === "SHA512") {
+        parsed.algorithm = algo as SupportedAlgorithm;
+      }
+    }
+
+    const digitsMatch = cleanUri.match(/[?&]digits=(\d+)/i);
+    if (digitsMatch) parsed.digits = parseInt(digitsMatch[1], 10);
+
+    const periodMatch = cleanUri.match(/[?&]period=(\d+)/i);
+    if (periodMatch) parsed.period = parseInt(periodMatch[1], 10);
+
+    return parsed;
+  }
+}
+
 function getCurrentFormState(): Omit<ParsedOtpAuth, "issuer" | "account"> {
   const mainInput = document.querySelector<HTMLTextAreaElement>("#mainInput")!;
   const algoSelectVal = document.querySelector<HTMLDivElement>("#algorithmSelect")!.dataset.value;
@@ -195,14 +234,9 @@ function getCurrentFormState(): Omit<ParsedOtpAuth, "issuer" | "account"> {
   const val = mainInput.value.trim();
   let secret = val;
 
-  // 放宽正则，捕获一整行，防止带有非标准字符/空格导致截断
-  const match = val.match(/(otpauth:\/\/[^\r\n]+)/i);
-  if (match) {
-    try {
-      secret = parseOtpAuthUri(match[1].trim()).secret;
-    } catch {
-      secret = ""; 
-    }
+  const parsedUri = extractSafeUriData(val);
+  if (parsedUri && parsedUri.secret) {
+    secret = normalizeBase32(parsedUri.secret);
   } else {
     secret = normalizeBase32(val);
   }
@@ -389,7 +423,7 @@ function bindEvents(): void {
     themeToggle.innerHTML = next === "dark" ? ICON_MOON : ICON_SUN;
   });
 
-  // --- 【核武器级防御：轮询与多事件并行】 ---
+  // --- 智能解析防抖 ---
   let lastParsedValue = "";
   let pollTimer: number | null = null;
 
@@ -397,32 +431,24 @@ function bindEvents(): void {
     const val = mainInput.value.trim();
     if (!val || val === lastParsedValue) return;
     
-    // 放宽正则，完整提取整行，防乱码中断
-    const match = val.match(/(otpauth:\/\/[^\r\n]+)/i);
+    // 使用提取兜底引擎
+    const parsedUri = extractSafeUriData(val);
     
-    if (match) {
-      try {
-        const parsed = parseOtpAuthUri(match[1].trim());
-        fillAdvancedForm(parsed);
-        setMessage("setupMessage", "已智能识别链接，并应用高级配置", "success");
-        lastParsedValue = val; 
-      } catch {
-        setMessage("setupMessage", ""); 
-      }
+    if (parsedUri && parsedUri.secret) {
+      fillAdvancedForm(parsedUri);
+      setMessage("setupMessage", "已智能识别链接，并应用高级配置", "success");
+      lastParsedValue = val; 
     } else {
       setMessage("setupMessage", "");
       lastParsedValue = ""; 
     }
   };
 
-  // 1. 常规事件触发（针对正常浏览器）
   const inputEvents = ['input', 'paste', 'change', 'keyup'];
   inputEvents.forEach(evt => {
     mainInput.addEventListener(evt, () => setTimeout(handleSmartInput, 100));
   });
 
-  // 2. 无脑轮询触发（针对被魔改不发事件的“毒瘤”浏览器）
-  // 只要用户点进了输入框，我们每秒查两次有没有东西贴进来
   mainInput.addEventListener('focus', () => {
     if (pollTimer) clearInterval(pollTimer);
     pollTimer = window.setInterval(handleSmartInput, 500);
@@ -435,7 +461,6 @@ function bindEvents(): void {
     }
     setTimeout(handleSmartInput, 100);
   });
-  // ----------------------------------------
 
   clearBtn.addEventListener("click", () => {
     resetForm();
@@ -443,8 +468,7 @@ function bindEvents(): void {
   });
 
   nextBtn.addEventListener("click", () => {
-    // 3. 点击按钮时，强制拦截预解析一次！双重保险
-    handleSmartInput();
+    handleSmartInput(); // 提交前再强制识别一次
 
     const state = getCurrentFormState();
     const rawVal = mainInput.value.trim();
