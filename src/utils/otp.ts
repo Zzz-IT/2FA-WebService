@@ -34,7 +34,7 @@ async function hmacDigest(
 ): Promise<Uint8Array> {
   const cryptoKey = await crypto.subtle.importKey(
     "raw",
-    secretBytes,
+    secretBytes as any,  // <--- 修改这里，绕过类型检查
     {
       name: "HMAC",
       hash: { name: algorithmToHmacName(algorithm) }
