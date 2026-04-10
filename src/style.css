@@ -512,15 +512,16 @@ body, .view, input, textarea, .btn, .notice, .theme-btn {
 
 .text-danger-flash {
   color: var(--danger) !important;
-  animation: flash-danger 0.8s infinite ease-in-out;
+  /* 将 0.8s 修改为 1s，闪烁速度放慢 */
+  animation: flash-danger 1s infinite ease-in-out; 
 }
 
-/* 修复：移除背景渐变，而不是覆盖整个 background 导致裁剪失效 */
 .code.text-danger-flash {
   background-image: none !important; 
   -webkit-text-fill-color: var(--danger) !important; 
   color: var(--danger) !important;
-  animation: flash-danger 0.8s infinite ease-in-out;
+  /* 将 0.8s 修改为 1s，闪烁速度放慢 */
+  animation: flash-danger 1s infinite ease-in-out; 
 }
 
 .bg-danger {
