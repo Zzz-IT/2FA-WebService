@@ -30,15 +30,18 @@ function setTheme(theme: "light" | "dark"): void {
 function renderApp(): void {
   const app = qs<HTMLDivElement>("#app");
   
-  // 插入流动背景层（位于 app 层级之外底端）
-  document.body.insertAdjacentHTML("afterbegin", `
-    <div class="bg-blobs">
-      <div class="blob blob-1"></div>
-      <div class="blob blob-2"></div>
-      <div class="blob blob-3"></div>
-    </div>
-  `);
+  // 防止热更新时重复插入背景
+  if (!document.querySelector(".bg-blobs")) {
+    document.body.insertAdjacentHTML("afterbegin", `
+      <div class="bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+      </div>
+    `);
+  }
 
+  // 渲染主体内容
   app.innerHTML = `
     <div class="app">
       <header class="topbar">
@@ -107,7 +110,13 @@ function renderApp(): void {
         </main>
       </div>
     </div>
+  `;
 
+  // 强行把弹窗挂载到 body 下面，脱离 app 容器的限制，彻底解决排版塌陷问题
+  const oldModal = document.getElementById("settingsModal");
+  if (oldModal) oldModal.remove();
+
+  document.body.insertAdjacentHTML("beforeend", `
     <div id="settingsModal" class="modal-overlay" aria-hidden="true">
       <div class="modal" role="dialog" aria-modal="true">
         <div class="modal-header">
@@ -148,7 +157,7 @@ function renderApp(): void {
         </div>
       </div>
     </div>
-  `;
+  `);
 }
 
 function groupCode(code: string): string {
@@ -166,7 +175,13 @@ function setMessage(viewId: "setupMessage" | "displayMessage", text: string, typ
 
 // 提取并计算当前表单状态
 function getCurrentFormState(): Omit<ParsedOtpAuth, "issuer" | "account"> {
-  const val = qs<HTMLTextAreaElement>("#mainInput").value.trim();
+  // 因为 modal 放到了外面，重新获取 DOM 确保能抓到
+  const mainInput = document.querySelector<HTMLTextAreaElement>("#mainInput")!;
+  const algoSelect = document.querySelector<HTMLSelectElement>("#algorithmSelect")!;
+  const digitsSelect = document.querySelector<HTMLSelectElement>("#digitsSelect")!;
+  const periodInput = document.querySelector<HTMLInputElement>("#periodInput")!;
+
+  const val = mainInput.value.trim();
   let secret = val;
 
   if (val.startsWith("otpauth://")) {
@@ -181,20 +196,20 @@ function getCurrentFormState(): Omit<ParsedOtpAuth, "issuer" | "account"> {
 
   return {
     secret,
-    algorithm: qs<HTMLSelectElement>("#algorithmSelect").value as SupportedAlgorithm,
-    digits: Number.parseInt(qs<HTMLSelectElement>("#digitsSelect").value, 10),
-    period: Number.parseInt(qs<HTMLInputElement>("#periodInput").value, 10)
+    algorithm: algoSelect.value as SupportedAlgorithm,
+    digits: Number.parseInt(digitsSelect.value, 10),
+    period: Number.parseInt(periodInput.value, 10)
   };
 }
 
 function fillAdvancedForm(data: Partial<ParsedOtpAuth>): void {
-  if (data.algorithm !== undefined) qs<HTMLSelectElement>("#algorithmSelect").value = data.algorithm;
-  if (data.digits !== undefined) qs<HTMLSelectElement>("#digitsSelect").value = String(data.digits);
-  if (data.period !== undefined) qs<HTMLInputElement>("#periodInput").value = String(data.period);
+  if (data.algorithm !== undefined) document.querySelector<HTMLSelectElement>("#algorithmSelect")!.value = data.algorithm;
+  if (data.digits !== undefined) document.querySelector<HTMLSelectElement>("#digitsSelect")!.value = String(data.digits);
+  if (data.period !== undefined) document.querySelector<HTMLInputElement>("#periodInput")!.value = String(data.period);
 }
 
 function resetForm(): void {
-  qs<HTMLTextAreaElement>("#mainInput").value = "";
+  document.querySelector<HTMLTextAreaElement>("#mainInput")!.value = "";
   fillAdvancedForm(DEFAULTS);
   setMessage("setupMessage", "");
 }
@@ -259,18 +274,18 @@ function stopTicker(): void {
 }
 
 function bindEvents(): void {
-  const themeToggle = qs<HTMLButtonElement>("#themeToggle");
-  const clearBtn = qs<HTMLButtonElement>("#clearBtn");
-  const nextBtn = qs<HTMLButtonElement>("#nextBtn");
-  const backBtn = qs<HTMLButtonElement>("#backBtn");
-  const copyBtn = qs<HTMLButtonElement>("#copyBtn");
-  const mainInput = qs<HTMLTextAreaElement>("#mainInput");
+  const themeToggle = document.querySelector<HTMLButtonElement>("#themeToggle")!;
+  const clearBtn = document.querySelector<HTMLButtonElement>("#clearBtn")!;
+  const nextBtn = document.querySelector<HTMLButtonElement>("#nextBtn")!;
+  const backBtn = document.querySelector<HTMLButtonElement>("#backBtn")!;
+  const copyBtn = document.querySelector<HTMLButtonElement>("#copyBtn")!;
+  const mainInput = document.querySelector<HTMLTextAreaElement>("#mainInput")!;
 
   // Modal elements
-  const modalOverlay = qs<HTMLDivElement>("#settingsModal");
-  const openSettingsBtn = qs<HTMLButtonElement>("#openSettingsBtn");
-  const closeSettingsBtn = qs<HTMLButtonElement>("#closeSettingsBtn");
-  const saveSettingsBtn = qs<HTMLButtonElement>("#saveSettingsBtn");
+  const modalOverlay = document.querySelector<HTMLDivElement>("#settingsModal")!;
+  const openSettingsBtn = document.querySelector<HTMLButtonElement>("#openSettingsBtn")!;
+  const closeSettingsBtn = document.querySelector<HTMLButtonElement>("#closeSettingsBtn")!;
+  const saveSettingsBtn = document.querySelector<HTMLButtonElement>("#saveSettingsBtn")!;
 
   const toggleModal = (show: boolean) => {
     if (show) {
@@ -345,7 +360,8 @@ function bindEvents(): void {
   });
 
   copyBtn.addEventListener("click", async () => {
-    const codeStr = qs<HTMLDivElement>("#codeText").textContent?.replace(/\s+/g, "");
+    const codeTextEl = document.querySelector<HTMLDivElement>("#codeText")!;
+    const codeStr = codeTextEl.textContent?.replace(/\s+/g, "");
     if (!codeStr || codeStr === "------") return;
 
     try {
@@ -362,7 +378,7 @@ function bootstrap(): void {
   renderApp();
   const theme = getStoredTheme();
   setTheme(theme);
-  qs<HTMLButtonElement>("#themeToggle").textContent = theme === "dark" ? "🌙" : "☀️";
+  document.querySelector<HTMLButtonElement>("#themeToggle")!.textContent = theme === "dark" ? "🌙" : "☀️";
   bindEvents();
   resetForm();
 }
