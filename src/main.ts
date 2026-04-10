@@ -30,7 +30,6 @@ function setTheme(theme: "light" | "dark"): void {
 function renderApp(): void {
   const app = qs<HTMLDivElement>("#app");
   
-  // 防止热更新时重复插入背景
   if (!document.querySelector(".bg-blobs")) {
     document.body.insertAdjacentHTML("afterbegin", `
       <div class="bg-blobs">
@@ -41,7 +40,6 @@ function renderApp(): void {
     `);
   }
 
-  // 渲染主体内容
   app.innerHTML = `
     <div class="app">
       <header class="topbar">
@@ -74,7 +72,13 @@ function renderApp(): void {
           <div id="setupMessage" class="message" aria-live="polite"></div>
 
           <div class="actions">
-            <button id="openSettingsBtn" class="btn" type="button">设置 ⚙️</button>
+            <button id="openSettingsBtn" class="btn btn-icon" type="button">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+              设置
+            </button>
             <button id="clearBtn" class="btn" type="button">清空</button>
             <button id="nextBtn" class="btn primary" type="button" style="flex: 2;">生成验证码</button>
           </div>
@@ -112,7 +116,6 @@ function renderApp(): void {
     </div>
   `;
 
-  // 强行把弹窗挂载到 body 下面，脱离 app 容器的限制，彻底解决排版塌陷问题
   const oldModal = document.getElementById("settingsModal");
   if (oldModal) oldModal.remove();
 
@@ -125,20 +128,26 @@ function renderApp(): void {
         </div>
         <div class="row">
           <div class="field">
-            <label for="algorithmSelect">加密算法</label>
-            <select id="algorithmSelect">
-              <option value="SHA1">SHA1 (默认)</option>
-              <option value="SHA256">SHA256</option>
-              <option value="SHA512">SHA512</option>
-            </select>
+            <label>加密算法</label>
+            <div class="custom-select" id="algorithmSelect" data-value="SHA1">
+              <div class="select-trigger">SHA1 (默认)</div>
+              <div class="select-options">
+                <div class="select-option active" data-val="SHA1">SHA1 (默认)</div>
+                <div class="select-option" data-val="SHA256">SHA256</div>
+                <div class="select-option" data-val="SHA512">SHA512</div>
+              </div>
+            </div>
           </div>
           <div class="field">
-            <label for="digitsSelect">验证码位数</label>
-            <select id="digitsSelect">
-              <option value="6">6 位</option>
-              <option value="7">7 位</option>
-              <option value="8">8 位</option>
-            </select>
+            <label>验证码位数</label>
+            <div class="custom-select" id="digitsSelect" data-value="6">
+              <div class="select-trigger">6 位</div>
+              <div class="select-options">
+                <div class="select-option active" data-val="6">6 位</div>
+                <div class="select-option" data-val="7">7 位</div>
+                <div class="select-option" data-val="8">8 位</div>
+              </div>
+            </div>
           </div>
         </div>
         <div class="field">
@@ -173,12 +182,11 @@ function setMessage(viewId: "setupMessage" | "displayMessage", text: string, typ
   el.textContent = text;
 }
 
-// 提取并计算当前表单状态
+// 提取当前表单状态（适配自定义下拉组件）
 function getCurrentFormState(): Omit<ParsedOtpAuth, "issuer" | "account"> {
-  // 因为 modal 放到了外面，重新获取 DOM 确保能抓到
   const mainInput = document.querySelector<HTMLTextAreaElement>("#mainInput")!;
-  const algoSelect = document.querySelector<HTMLSelectElement>("#algorithmSelect")!;
-  const digitsSelect = document.querySelector<HTMLSelectElement>("#digitsSelect")!;
+  const algoSelectVal = document.querySelector<HTMLDivElement>("#algorithmSelect")!.dataset.value;
+  const digitsSelectVal = document.querySelector<HTMLDivElement>("#digitsSelect")!.dataset.value;
   const periodInput = document.querySelector<HTMLInputElement>("#periodInput")!;
 
   const val = mainInput.value.trim();
@@ -196,15 +204,28 @@ function getCurrentFormState(): Omit<ParsedOtpAuth, "issuer" | "account"> {
 
   return {
     secret,
-    algorithm: algoSelect.value as SupportedAlgorithm,
-    digits: Number.parseInt(digitsSelect.value, 10),
+    algorithm: algoSelectVal as SupportedAlgorithm,
+    digits: Number.parseInt(digitsSelectVal || "6", 10),
     period: Number.parseInt(periodInput.value, 10)
   };
 }
 
+// 修改自定义下拉框的值
+function setCustomSelectValue(id: string, value: string) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.dataset.value = value;
+  const targetOption = el.querySelector(`.select-option[data-val="${value}"]`);
+  if (targetOption) {
+    el.querySelector('.select-trigger')!.textContent = targetOption.textContent;
+    el.querySelectorAll('.select-option').forEach(opt => opt.classList.remove('active'));
+    targetOption.classList.add('active');
+  }
+}
+
 function fillAdvancedForm(data: Partial<ParsedOtpAuth>): void {
-  if (data.algorithm !== undefined) document.querySelector<HTMLSelectElement>("#algorithmSelect")!.value = data.algorithm;
-  if (data.digits !== undefined) document.querySelector<HTMLSelectElement>("#digitsSelect")!.value = String(data.digits);
+  if (data.algorithm !== undefined) setCustomSelectValue("algorithmSelect", data.algorithm);
+  if (data.digits !== undefined) setCustomSelectValue("digitsSelect", String(data.digits));
   if (data.period !== undefined) document.querySelector<HTMLInputElement>("#periodInput")!.value = String(data.period);
 }
 
@@ -281,7 +302,40 @@ function bindEvents(): void {
   const copyBtn = document.querySelector<HTMLButtonElement>("#copyBtn")!;
   const mainInput = document.querySelector<HTMLTextAreaElement>("#mainInput")!;
 
-  // Modal elements
+  // 初始化自定义下拉框逻辑
+  const customSelects = document.querySelectorAll('.custom-select');
+  
+  // 点击外部关闭所有下拉框
+  document.addEventListener('click', (e) => {
+    customSelects.forEach(select => {
+      if (!select.contains(e.target as Node)) {
+        select.classList.remove('open');
+      }
+    });
+  });
+
+  customSelects.forEach(select => {
+    const trigger = select.querySelector('.select-trigger')!;
+    const options = select.querySelectorAll('.select-option');
+
+    trigger.addEventListener('click', () => {
+      // 互斥展开：关闭其他下拉框
+      customSelects.forEach(other => {
+        if (other !== select) other.classList.remove('open');
+      });
+      select.classList.toggle('open');
+    });
+
+    options.forEach(opt => {
+      opt.addEventListener('click', () => {
+        const val = (opt as HTMLElement).dataset.val!;
+        setCustomSelectValue(select.id, val);
+        select.classList.remove('open');
+      });
+    });
+  });
+
+  // Modal 弹窗逻辑
   const modalOverlay = document.querySelector<HTMLDivElement>("#settingsModal")!;
   const openSettingsBtn = document.querySelector<HTMLButtonElement>("#openSettingsBtn")!;
   const closeSettingsBtn = document.querySelector<HTMLButtonElement>("#closeSettingsBtn")!;
@@ -294,6 +348,8 @@ function bindEvents(): void {
     } else {
       modalOverlay.classList.remove("open");
       modalOverlay.setAttribute("aria-hidden", "true");
+      // 关闭弹窗时，顺便把可能展开的下拉框收起
+      customSelects.forEach(s => s.classList.remove('open'));
     }
   };
 
@@ -301,11 +357,11 @@ function bindEvents(): void {
   closeSettingsBtn.addEventListener("click", () => toggleModal(false));
   saveSettingsBtn.addEventListener("click", () => toggleModal(false));
   
-  // 点击空白处关闭弹窗
   modalOverlay.addEventListener("click", (e) => {
     if (e.target === modalOverlay) toggleModal(false);
   });
 
+  // 主题切换
   themeToggle.addEventListener("click", () => {
     themeToggle.classList.add("spin");
     setTimeout(() => themeToggle.classList.remove("spin"), 400);
@@ -316,6 +372,7 @@ function bindEvents(): void {
     themeToggle.textContent = next === "dark" ? "🌙" : "☀️";
   });
 
+  // 输入框智能识别
   mainInput.addEventListener("input", () => {
     const val = mainInput.value.trim();
     if (val.startsWith("otpauth://")) {
