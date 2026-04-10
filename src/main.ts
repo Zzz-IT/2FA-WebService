@@ -66,48 +66,14 @@ function renderApp(): void {
               ></textarea>
               <small class="help">自动识别并解析。若为 Secret 会自动忽略空格并转大写。</small>
             </div>
-
-            <details class="advanced-settings">
-              <summary>高级设置 ⚙️</summary>
-              <div class="advanced-settings-content">
-                <div class="row">
-                  <div class="field">
-                    <label for="algorithmSelect">加密算法</label>
-                    <select id="algorithmSelect">
-                      <option value="SHA1">SHA1 (默认)</option>
-                      <option value="SHA256">SHA256</option>
-                      <option value="SHA512">SHA512</option>
-                    </select>
-                  </div>
-                  <div class="field">
-                    <label for="digitsSelect">验证码位数</label>
-                    <select id="digitsSelect">
-                      <option value="6">6 位</option>
-                      <option value="7">7 位</option>
-                      <option value="8">8 位</option>
-                    </select>
-                  </div>
-                </div>
-                <div class="field">
-                  <label for="periodInput">刷新周期（秒）</label>
-                  <input
-                    id="periodInput"
-                    type="number"
-                    min="1"
-                    step="1"
-                    value="30"
-                    inputmode="numeric"
-                  />
-                </div>
-              </div>
-            </details>
           </section>
 
           <div id="setupMessage" class="message" aria-live="polite"></div>
 
           <div class="actions">
+            <button id="openSettingsBtn" class="btn" type="button">设置 ⚙️</button>
             <button id="clearBtn" class="btn" type="button">清空</button>
-            <button id="nextBtn" class="btn primary" type="button">生成验证码</button>
+            <button id="nextBtn" class="btn primary" type="button" style="flex: 2;">生成验证码</button>
           </div>
         </main>
 
@@ -119,7 +85,7 @@ function renderApp(): void {
 
             <div class="code-wrap">
               <div id="codeText" class="code">------</div>
-              <button id="copyBtn" class="btn primary" type="button" style="width: 100%; max-width: 200px;">复制验证码</button>
+              <button id="copyBtn" class="btn primary" type="button" style="width: 100%; max-width: 240px;">复制验证码</button>
             </div>
 
             <div class="progress-wrap">
@@ -141,6 +107,47 @@ function renderApp(): void {
         </main>
       </div>
     </div>
+
+    <div id="settingsModal" class="modal-overlay" aria-hidden="true">
+      <div class="modal" role="dialog" aria-modal="true">
+        <div class="modal-header">
+          <h2>高级设置</h2>
+          <button id="closeSettingsBtn" class="close-btn" aria-label="关闭">&times;</button>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="algorithmSelect">加密算法</label>
+            <select id="algorithmSelect">
+              <option value="SHA1">SHA1 (默认)</option>
+              <option value="SHA256">SHA256</option>
+              <option value="SHA512">SHA512</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="digitsSelect">验证码位数</label>
+            <select id="digitsSelect">
+              <option value="6">6 位</option>
+              <option value="7">7 位</option>
+              <option value="8">8 位</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="periodInput">刷新周期（秒）</label>
+          <input
+            id="periodInput"
+            type="number"
+            min="1"
+            step="1"
+            value="30"
+            inputmode="numeric"
+          />
+        </div>
+        <div class="actions" style="margin-top: 8px;">
+          <button id="saveSettingsBtn" class="btn primary" type="button">完成</button>
+        </div>
+      </div>
+    </div>
   `;
 }
 
@@ -157,7 +164,7 @@ function setMessage(viewId: "setupMessage" | "displayMessage", text: string, typ
   el.textContent = text;
 }
 
-// 提取并计算当前表单状态，支持直接解析 URI
+// 提取并计算当前表单状态
 function getCurrentFormState(): Omit<ParsedOtpAuth, "issuer" | "account"> {
   const val = qs<HTMLTextAreaElement>("#mainInput").value.trim();
   let secret = val;
@@ -166,7 +173,7 @@ function getCurrentFormState(): Omit<ParsedOtpAuth, "issuer" | "account"> {
     try {
       secret = parseOtpAuthUri(val).secret;
     } catch {
-      secret = ""; // 解析失败则置空
+      secret = ""; 
     }
   } else {
     secret = normalizeBase32(val);
@@ -259,7 +266,31 @@ function bindEvents(): void {
   const copyBtn = qs<HTMLButtonElement>("#copyBtn");
   const mainInput = qs<HTMLTextAreaElement>("#mainInput");
 
-  // 主题切换附带旋转过渡
+  // Modal elements
+  const modalOverlay = qs<HTMLDivElement>("#settingsModal");
+  const openSettingsBtn = qs<HTMLButtonElement>("#openSettingsBtn");
+  const closeSettingsBtn = qs<HTMLButtonElement>("#closeSettingsBtn");
+  const saveSettingsBtn = qs<HTMLButtonElement>("#saveSettingsBtn");
+
+  const toggleModal = (show: boolean) => {
+    if (show) {
+      modalOverlay.classList.add("open");
+      modalOverlay.setAttribute("aria-hidden", "false");
+    } else {
+      modalOverlay.classList.remove("open");
+      modalOverlay.setAttribute("aria-hidden", "true");
+    }
+  };
+
+  openSettingsBtn.addEventListener("click", () => toggleModal(true));
+  closeSettingsBtn.addEventListener("click", () => toggleModal(false));
+  saveSettingsBtn.addEventListener("click", () => toggleModal(false));
+  
+  // 点击空白处关闭弹窗
+  modalOverlay.addEventListener("click", (e) => {
+    if (e.target === modalOverlay) toggleModal(false);
+  });
+
   themeToggle.addEventListener("click", () => {
     themeToggle.classList.add("spin");
     setTimeout(() => themeToggle.classList.remove("spin"), 400);
@@ -270,7 +301,6 @@ function bindEvents(): void {
     themeToggle.textContent = next === "dark" ? "🌙" : "☀️";
   });
 
-  // 监听合并输入框，智能识别 URI
   mainInput.addEventListener("input", () => {
     const val = mainInput.value.trim();
     if (val.startsWith("otpauth://")) {
@@ -279,7 +309,7 @@ function bindEvents(): void {
         fillAdvancedForm(parsed);
         setMessage("setupMessage", "已智能识别链接，并应用高级配置", "success");
       } catch {
-        setMessage("setupMessage", ""); // 输入过程中不报错以免打断
+        setMessage("setupMessage", ""); 
       }
     } else {
       setMessage("setupMessage", "");
@@ -288,7 +318,6 @@ function bindEvents(): void {
 
   clearBtn.addEventListener("click", () => resetForm());
 
-  // 生成展示
   nextBtn.addEventListener("click", () => {
     const state = getCurrentFormState();
     const rawVal = mainInput.value.trim();
