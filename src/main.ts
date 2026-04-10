@@ -6,8 +6,7 @@ import { qs } from "./utils/dom";
 import { generateTotp } from "./utils/otp";
 import { parseOtpAuthUri } from "./utils/otpauth";
 
-const DEFAULTS: Omit<ParsedOtpAuth, "issuer" | "account"> = {
-  secret: "",
+const DEFAULTS: Omit<ParsedOtpAuth, "issuer" | "account" | "secret"> = {
   digits: 6,
   period: 30,
   algorithm: "SHA1"
@@ -31,11 +30,12 @@ function setTheme(theme: "light" | "dark"): void {
 function renderApp(): void {
   const app = qs<HTMLDivElement>("#app");
   
-  // 插入流动背景和应用主体
+  // 插入流动背景层（位于 app 层级之外底端）
   document.body.insertAdjacentHTML("afterbegin", `
     <div class="bg-blobs">
       <div class="blob blob-1"></div>
       <div class="blob blob-2"></div>
+      <div class="blob blob-3"></div>
     </div>
   `);
 
@@ -57,24 +57,14 @@ function renderApp(): void {
 
           <section class="form-grid">
             <div class="field">
-              <label for="otpauthInput">快捷导入 (otpauth://)</label>
+              <label for="mainInput">Secret 或 otpauth:// 链接</label>
               <textarea
-                id="otpauthInput"
-                placeholder="粘贴 otpauth:// 链接，自动解析填充"
-              ></textarea>
-            </div>
-
-            <div class="field">
-              <label for="secretInput">Base32 Secret</label>
-              <input
-                id="secretInput"
-                type="text"
-                inputmode="text"
-                autocomplete="off"
+                id="mainInput"
+                placeholder="在此粘贴 otpauth:// 链接自动解析，或直接输入 Base32 Secret..."
                 spellcheck="false"
-                placeholder="例如：JBSWY3DPEHPK3PXP"
-              />
-              <small class="help">自动忽略空格并转为大写。</small>
+                autocomplete="off"
+              ></textarea>
+              <small class="help">自动识别并解析。若为 Secret 会自动忽略空格并转大写。</small>
             </div>
 
             <details class="advanced-settings">
@@ -116,7 +106,7 @@ function renderApp(): void {
           <div id="setupMessage" class="message" aria-live="polite"></div>
 
           <div class="actions">
-            <button id="clearBtn" class="btn" type="button">清空内容</button>
+            <button id="clearBtn" class="btn" type="button">清空</button>
             <button id="nextBtn" class="btn primary" type="button">生成验证码</button>
           </div>
         </main>
@@ -167,25 +157,38 @@ function setMessage(viewId: "setupMessage" | "displayMessage", text: string, typ
   el.textContent = text;
 }
 
+// 提取并计算当前表单状态，支持直接解析 URI
 function getCurrentFormState(): Omit<ParsedOtpAuth, "issuer" | "account"> {
+  const val = qs<HTMLTextAreaElement>("#mainInput").value.trim();
+  let secret = val;
+
+  if (val.startsWith("otpauth://")) {
+    try {
+      secret = parseOtpAuthUri(val).secret;
+    } catch {
+      secret = ""; // 解析失败则置空
+    }
+  } else {
+    secret = normalizeBase32(val);
+  }
+
   return {
-    secret: normalizeBase32(qs<HTMLInputElement>("#secretInput").value),
+    secret,
     algorithm: qs<HTMLSelectElement>("#algorithmSelect").value as SupportedAlgorithm,
     digits: Number.parseInt(qs<HTMLSelectElement>("#digitsSelect").value, 10),
     period: Number.parseInt(qs<HTMLInputElement>("#periodInput").value, 10)
   };
 }
 
-function fillForm(data: Partial<ParsedOtpAuth>): void {
-  if (data.secret !== undefined) qs<HTMLInputElement>("#secretInput").value = data.secret;
+function fillAdvancedForm(data: Partial<ParsedOtpAuth>): void {
   if (data.algorithm !== undefined) qs<HTMLSelectElement>("#algorithmSelect").value = data.algorithm;
   if (data.digits !== undefined) qs<HTMLSelectElement>("#digitsSelect").value = String(data.digits);
   if (data.period !== undefined) qs<HTMLInputElement>("#periodInput").value = String(data.period);
 }
 
 function resetForm(): void {
-  qs<HTMLTextAreaElement>("#otpauthInput").value = "";
-  fillForm(DEFAULTS);
+  qs<HTMLTextAreaElement>("#mainInput").value = "";
+  fillAdvancedForm(DEFAULTS);
   setMessage("setupMessage", "");
 }
 
@@ -220,7 +223,6 @@ async function refreshOtp(): Promise<void> {
     qs<HTMLElement>("#remainingText").textContent = `${result.remainingSeconds} s`;
 
     const progress = result.remainingSeconds / state.period;
-    // 移除动画以防止进度条回弹瞬间闪烁，如果需要平滑可交由 css transform 结合 requestAnimationFrame 处理
     const progressBar = qs<HTMLDivElement>("#progressBar");
     progressBar.style.transition = result.remainingSeconds === state.period ? "none" : "transform 1s linear";
     progressBar.style.transform = `scaleX(${progress})`;
@@ -255,42 +257,48 @@ function bindEvents(): void {
   const nextBtn = qs<HTMLButtonElement>("#nextBtn");
   const backBtn = qs<HTMLButtonElement>("#backBtn");
   const copyBtn = qs<HTMLButtonElement>("#copyBtn");
-  const otpauthInput = qs<HTMLTextAreaElement>("#otpauthInput");
+  const mainInput = qs<HTMLTextAreaElement>("#mainInput");
 
+  // 主题切换附带旋转过渡
   themeToggle.addEventListener("click", () => {
+    themeToggle.classList.add("spin");
+    setTimeout(() => themeToggle.classList.remove("spin"), 400);
+
     const current = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
     const next = current === "dark" ? "light" : "dark";
     setTheme(next);
     themeToggle.textContent = next === "dark" ? "🌙" : "☀️";
   });
 
-  // 监听 URI 解析
-  otpauthInput.addEventListener("input", () => {
-    const raw = otpauthInput.value.trim();
-    if (!raw) return;
-    try {
-      const parsed = parseOtpAuthUri(raw);
-      fillForm(parsed);
-      setMessage("setupMessage", "链接已自动解析填充。", "success");
-    } catch {
-      // 在输入过程中不强制报错，静默失败即可
+  // 监听合并输入框，智能识别 URI
+  mainInput.addEventListener("input", () => {
+    const val = mainInput.value.trim();
+    if (val.startsWith("otpauth://")) {
+      try {
+        const parsed = parseOtpAuthUri(val);
+        fillAdvancedForm(parsed);
+        setMessage("setupMessage", "已智能识别链接，并应用高级配置", "success");
+      } catch {
+        setMessage("setupMessage", ""); // 输入过程中不报错以免打断
+      }
+    } else {
+      setMessage("setupMessage", "");
     }
   });
 
-  clearBtn.addEventListener("click", () => {
-    resetForm();
-  });
+  clearBtn.addEventListener("click", () => resetForm());
 
-  // 前往展示页
+  // 生成展示
   nextBtn.addEventListener("click", () => {
     const state = getCurrentFormState();
+    const rawVal = mainInput.value.trim();
     
-    if (!state.secret) {
-      setMessage("setupMessage", "请输入 Base32 secret。", "error");
+    if (!rawVal) {
+      setMessage("setupMessage", "请输入 Secret 或粘贴链接。", "error");
       return;
     }
-    if (!isValidBase32(state.secret)) {
-      setMessage("setupMessage", "Secret 不是合法的 Base32 格式。", "error");
+    if (!state.secret || !isValidBase32(state.secret)) {
+      setMessage("setupMessage", "识别不到合法的 Base32 密钥，请检查输入。", "error");
       return;
     }
     if (!Number.isFinite(state.period) || state.period <= 0) {
@@ -302,13 +310,11 @@ function bindEvents(): void {
     startTicker();
   });
 
-  // 返回修改页
   backBtn.addEventListener("click", () => {
     stopTicker();
     switchView("setup");
   });
 
-  // 复制动态码
   copyBtn.addEventListener("click", async () => {
     const codeStr = qs<HTMLDivElement>("#codeText").textContent?.replace(/\s+/g, "");
     if (!codeStr || codeStr === "------") return;
@@ -317,7 +323,7 @@ function bindEvents(): void {
       await copyText(codeStr);
       setMessage("displayMessage", "验证码已成功复制。", "success");
       setTimeout(() => setMessage("displayMessage", ""), 2000);
-    } catch (error) {
+    } catch {
       setMessage("displayMessage", "复制失败，请手动选择复制。", "error");
     }
   });
