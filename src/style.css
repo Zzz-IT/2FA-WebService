@@ -1,34 +1,40 @@
 :root {
   color-scheme: light dark;
   --bg: #f3f4f6;
-  --panel: rgba(255, 255, 255, 0.75);
-  --panel-soft: rgba(249, 250, 251, 0.6);
+  --panel: rgba(255, 255, 255, 0.65);
+  --panel-soft: rgba(249, 250, 251, 0.5);
   --text: #111827;
   --muted: #6b7280;
-  --line: rgba(229, 231, 235, 0.5);
+  --line: rgba(229, 231, 235, 0.6);
   --primary: #111827;
   --primary-text: #ffffff;
   --danger: #b91c1c;
   --success: #047857;
-  --shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-  --blob-1: rgba(52, 211, 153, 0.4);
-  --blob-2: rgba(59, 130, 246, 0.4);
+  --shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  
+  /* 流动球体颜色 (亮色模式更鲜艳) */
+  --blob-1: rgba(52, 211, 153, 0.6);
+  --blob-2: rgba(59, 130, 246, 0.6);
+  --blob-3: rgba(168, 85, 247, 0.5);
 }
 
 :root[data-theme="dark"] {
   --bg: #0b1020;
-  --panel: rgba(18, 26, 43, 0.75);
-  --panel-soft: rgba(24, 34, 53, 0.6);
+  --panel: rgba(18, 26, 43, 0.65);
+  --panel-soft: rgba(24, 34, 53, 0.5);
   --text: #f3f4f6;
   --muted: #9ca3af;
-  --line: rgba(40, 50, 69, 0.5);
+  --line: rgba(40, 50, 69, 0.6);
   --primary: #f3f4f6;
   --primary-text: #111827;
   --danger: #f87171;
   --success: #34d399;
-  --shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
-  --blob-1: rgba(52, 211, 153, 0.2);
-  --blob-2: rgba(59, 130, 246, 0.2);
+  --shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  
+  /* 流动球体颜色 (暗色模式稍暗) */
+  --blob-1: rgba(52, 211, 153, 0.4);
+  --blob-2: rgba(59, 130, 246, 0.4);
+  --blob-3: rgba(168, 85, 247, 0.3);
 }
 
 * {
@@ -39,48 +45,68 @@ html, body {
   margin: 0;
   min-height: 100%;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: var(--bg);
   color: var(--text);
   overflow-x: hidden;
+  /* 去除 body 的背景，让底层 bg-blobs 显示出来 */
+  background: transparent; 
+}
+
+/* 全局颜色切换动效 */
+body, .view, input, select, textarea, .btn, .notice, .advanced-settings, .theme-btn {
+  transition: background-color 0.5s ease, color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
 }
 
 body {
   padding: 24px;
 }
 
-/* 流动模糊背景 */
+/* --- 增强版流动模糊背景 --- */
 .bg-blobs {
   position: fixed;
   inset: 0;
   z-index: -1;
   overflow: hidden;
-  pointer-events: none;
+  background: var(--bg); /* 底色放在这里 */
+  transition: background-color 0.5s ease;
 }
 
 .blob {
   position: absolute;
   border-radius: 50%;
-  filter: blur(80px);
-  animation: float 15s infinite ease-in-out alternate;
+  filter: blur(90px);
+  will-change: transform;
+  animation: float 20s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .blob-1 {
   top: -10%; left: -10%;
-  width: 50vw; height: 50vw;
+  width: 60vw; height: 60vw;
   background: var(--blob-1);
 }
 
 .blob-2 {
-  bottom: -10%; right: -10%;
-  width: 60vw; height: 60vw;
+  bottom: -20%; right: -10%;
+  width: 70vw; height: 70vw;
   background: var(--blob-2);
-  animation-delay: -7.5s;
+  animation-delay: -5s;
+  animation-duration: 25s;
+}
+
+.blob-3 {
+  top: 30%; left: 40%;
+  width: 50vw; height: 50vw;
+  background: var(--blob-3);
+  animation-delay: -10s;
+  animation-duration: 22s;
 }
 
 @keyframes float {
-  0% { transform: translate(0, 0) scale(1); }
-  100% { transform: translate(10vw, 15vh) scale(1.1); }
+  0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+  50% { transform: translate(15vw, 10vh) scale(1.1) rotate(90deg); }
+  100% { transform: translate(-10vw, 20vh) scale(0.95) rotate(180deg); }
 }
+
+/* -------------------------- */
 
 #app {
   max-width: 600px;
@@ -111,6 +137,7 @@ body {
   color: var(--muted);
 }
 
+/* 主题按钮动效 */
 .theme-btn {
   border: 1px solid var(--line);
   background: var(--panel);
@@ -120,14 +147,18 @@ body {
   padding: 10px 14px;
   cursor: pointer;
   box-shadow: var(--shadow);
-  transition: transform 0.2s;
+  transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55), background-color 0.5s ease;
 }
 
 .theme-btn:active {
-  transform: scale(0.95);
+  transform: scale(0.85);
 }
 
-/* 视图切换动效 */
+.theme-btn.spin {
+  transform: rotate(360deg) scale(0.9);
+}
+
+/* 视图切换与毛玻璃 */
 .view-container {
   position: relative;
 }
@@ -135,8 +166,8 @@ body {
 .view {
   display: none;
   background: var(--panel);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--line);
   border-radius: 24px;
   box-shadow: var(--shadow);
@@ -190,7 +221,6 @@ body {
   padding: 14px 16px;
   outline: none;
   font: inherit;
-  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .field input:focus,
@@ -201,7 +231,7 @@ body {
 }
 
 .field textarea {
-  min-height: 80px;
+  min-height: 100px;
   resize: vertical;
 }
 
@@ -211,7 +241,6 @@ body {
   gap: 16px;
 }
 
-/* 高级设置折叠面板 */
 .advanced-settings {
   border: 1px solid var(--line);
   border-radius: 16px;
@@ -254,13 +283,13 @@ body {
   padding: 14px 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
   flex: 1;
   font: inherit;
+  transition: transform 0.2s, background-color 0.3s, color 0.3s;
 }
 
 .btn:active {
-  transform: scale(0.98);
+  transform: scale(0.96);
 }
 
 .btn.primary {
@@ -325,7 +354,7 @@ body {
   width: 100%;
   background: var(--text);
   transform-origin: left center;
-  transition: transform 1s linear;
+  transition: transform 1s linear; /* 不受全局主题过渡影响 */
 }
 
 .message {
@@ -351,7 +380,7 @@ small.help {
   #app {
     margin-top: 20px;
   }
-  .card {
+  .view {
     padding: 20px;
   }
   .row {
