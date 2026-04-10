@@ -53,19 +53,25 @@ body {
   align-items: center;
   justify-content: center;
   padding: 24px;
+  /* 基础平滑过渡 */
+  transition: background-color 0.5s ease, color 0.5s ease;
 }
 
-body, .view, input, textarea, .btn, .notice, .theme-btn {
-  transition: background-color 0.5s ease, color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
+/* --- 全局文本与 SVG 丝滑过渡 --- */
+h1, .subtitle, .meta, label, .progress-text, .help, .message, .close-btn, .code {
+  transition: color 0.5s ease;
+}
+svg {
+  transition: stroke 0.5s ease, fill 0.5s ease, color 0.5s ease;
 }
 
-/* --- 流动背景 --- */
+/* --- 流动背景平滑过渡 --- */
 .bg-blobs {
   position: fixed;
   inset: 0;
   z-index: -1;
   overflow: hidden;
-  background: var(--bg);
+  background-color: var(--bg);
   transition: background-color 0.5s ease;
 }
 
@@ -75,29 +81,13 @@ body, .view, input, textarea, .btn, .notice, .theme-btn {
   filter: blur(100px);
   will-change: transform;
   animation: float 10s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+  /* 球体颜色变化设为 0.8s，比界面稍微慢一点点，视觉更高级 */
+  transition: background-color 0.8s ease; 
 }
 
-.blob-1 {
-  top: -10%; left: -10%;
-  width: 60vw; height: 60vw;
-  background: var(--blob-1);
-}
-
-.blob-2 {
-  bottom: -20%; right: -10%;
-  width: 70vw; height: 70vw;
-  background: var(--blob-2);
-  animation-delay: -2s;
-  animation-duration: 12s;
-}
-
-.blob-3 {
-  top: 30%; left: 40%;
-  width: 50vw; height: 50vw;
-  background: var(--blob-3);
-  animation-delay: -5s;
-  animation-duration: 14s;
-}
+.blob-1 { background-color: var(--blob-1); width: 60vw; height: 60vw; top: -10%; left: -10%; }
+.blob-2 { background-color: var(--blob-2); width: 70vw; height: 70vw; bottom: -20%; right: -10%; animation-delay: -2s; animation-duration: 12s; }
+.blob-3 { background-color: var(--blob-3); width: 50vw; height: 50vw; top: 30%; left: 40%; animation-delay: -5s; animation-duration: 14s; }
 
 @keyframes float {
   0% { transform: translate(0, 0) scale(1) rotate(0deg); }
@@ -142,7 +132,7 @@ body, .view, input, textarea, .btn, .notice, .theme-btn {
 /* 主题切换按钮 */
 .theme-btn {
   border: 1px solid var(--line);
-  background: var(--panel);
+  background-color: var(--panel);
   backdrop-filter: blur(12px);
   color: var(--text);
   border-radius: 16px;
@@ -152,6 +142,7 @@ body, .view, input, textarea, .btn, .notice, .theme-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55), background-color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease, color 0.5s ease;
 }
 
 .theme-btn svg {
@@ -173,7 +164,7 @@ body, .view, input, textarea, .btn, .notice, .theme-btn {
 
 .view {
   display: none;
-  background: var(--panel);
+  background-color: var(--panel);
   backdrop-filter: blur(28px);
   -webkit-backdrop-filter: blur(28px);
   border: 1px solid var(--line);
@@ -182,6 +173,7 @@ body, .view, input, textarea, .btn, .notice, .theme-btn {
   padding: 36px; 
   gap: 24px;
   animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: background-color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
 }
 
 .view.active {
@@ -195,12 +187,13 @@ body, .view, input, textarea, .btn, .notice, .theme-btn {
 
 .notice {
   border: 1px solid var(--line);
-  background: var(--panel-soft);
+  background-color: var(--panel-soft);
   border-radius: 18px;
   padding: 16px;
   color: var(--muted);
   line-height: 1.6;
   font-size: 0.95rem;
+  transition: background-color 0.5s ease, border-color 0.5s ease, color 0.5s ease;
 }
 
 .form-grid {
@@ -223,13 +216,14 @@ body, .view, input, textarea, .btn, .notice, .theme-btn {
 .field textarea {
   width: 100%;
   border: 1px solid var(--line);
-  background: var(--panel-soft);
+  background-color: var(--panel-soft);
   color: var(--text);
   border-radius: 20px;
   padding: 16px;
   outline: none;
   font: inherit;
   box-shadow: none; 
+  transition: background-color 0.5s ease, border-color 0.5s ease, box-shadow 0.2s, color 0.5s ease;
 }
 
 .field input:focus,
@@ -253,7 +247,11 @@ body, .view, input, textarea, .btn, .notice, .theme-btn {
 .select-trigger {
   width: 100%;
   border: 1px solid var(--line);
-  background: var(--panel-soft) url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 16px center;
+  /* 拆分背景属性以支持平滑过渡 */
+  background-color: var(--panel-soft);
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
   background-size: 16px;
   color: var(--text);
   border-radius: 20px;
@@ -261,7 +259,7 @@ body, .view, input, textarea, .btn, .notice, .theme-btn {
   padding-right: 48px;
   cursor: pointer;
   user-select: none;
-  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.5s;
+  transition: background-color 0.5s ease, border-color 0.5s ease, box-shadow 0.2s, color 0.5s ease;
 }
 
 :root[data-theme="dark"] .select-trigger {
@@ -278,7 +276,7 @@ body, .view, input, textarea, .btn, .notice, .theme-btn {
   top: calc(100% + 8px);
   left: 0;
   right: 0;
-  background: var(--panel);
+  background-color: var(--panel);
   backdrop-filter: blur(40px);
   -webkit-backdrop-filter: blur(40px);
   border: 1px solid var(--line);
@@ -288,7 +286,8 @@ body, .view, input, textarea, .btn, .notice, .theme-btn {
   opacity: 0;
   visibility: hidden;
   transform: translateY(-10px);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  /* 显式列出过渡属性，防止 all 覆盖背景色 0.5s 的过渡 */
+  transition: opacity 0.2s, visibility 0.2s, transform 0.2s, background-color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -303,17 +302,17 @@ body, .view, input, textarea, .btn, .notice, .theme-btn {
 .select-option {
   padding: 14px 16px;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  transition: background-color 0.2s, color 0.2s;
   font-size: 0.95rem;
 }
 
 .select-option:hover {
-  background: rgba(107, 114, 128, 0.15);
+  background-color: rgba(107, 114, 128, 0.15);
 }
 
 .select-option.active {
   color: var(--text);
-  background: rgba(107, 114, 128, 0.25);
+  background-color: rgba(107, 114, 128, 0.25);
   font-weight: 600;
 }
 
@@ -333,7 +332,7 @@ body, .view, input, textarea, .btn, .notice, .theme-btn {
 
 .btn {
   border: 1px solid var(--line);
-  background: var(--panel-soft);
+  background-color: var(--panel-soft);
   color: var(--text);
   border-radius: 16px;
   padding: 16px;
@@ -341,7 +340,7 @@ body, .view, input, textarea, .btn, .notice, .theme-btn {
   cursor: pointer;
   flex: 1;
   font: inherit;
-  transition: transform 0.2s, background-color 0.3s, color 0.3s;
+  transition: transform 0.2s, opacity 0.2s, background-color 0.5s ease, color 0.5s ease, border-color 0.5s ease;
   min-width: 100px;
 }
 
@@ -363,7 +362,7 @@ body, .view, input, textarea, .btn, .notice, .theme-btn {
 }
 
 .btn.primary {
-  background: var(--primary);
+  background-color: var(--primary);
   color: var(--primary-text);
   border-color: transparent;
 }
@@ -378,7 +377,7 @@ body, .view, input, textarea, .btn, .notice, .theme-btn {
   inset: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.4);
+  background-color: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   display: flex;
@@ -397,7 +396,7 @@ body, .view, input, textarea, .btn, .notice, .theme-btn {
 }
 
 .modal {
-  background: var(--panel);
+  background-color: var(--panel);
   backdrop-filter: blur(32px);
   -webkit-backdrop-filter: blur(32px);
   border: 1px solid var(--line);
@@ -407,7 +406,7 @@ body, .view, input, textarea, .btn, .notice, .theme-btn {
   max-width: 440px;
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
   transform: translateY(20px) scale(0.95);
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.5s ease, border-color 0.5s ease;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
   display: grid;
   gap: 20px;
 }
@@ -429,13 +428,12 @@ body, .view, input, textarea, .btn, .notice, .theme-btn {
 }
 
 .close-btn {
-  background: transparent;
+  background-color: transparent;
   border: none;
   font-size: 1.8rem;
   line-height: 1;
   cursor: pointer;
   color: var(--muted);
-  transition: color 0.2s;
   padding: 0;
 }
 
@@ -469,11 +467,15 @@ body, .view, input, textarea, .btn, .notice, .theme-btn {
   letter-spacing: 0.08em; 
   font-weight: 800;
   font-variant-numeric: tabular-nums;
-  background: linear-gradient(135deg, var(--text), var(--muted));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  /* 移除原有的固定渐变背景，改用高级阴影叠加和支持平滑过渡的 color */
+  color: var(--text);
+  text-shadow: 0 4px 20px rgba(0,0,0,0.05);
   line-height: 1.1;
   white-space: nowrap; 
+}
+
+:root[data-theme="dark"] .code {
+  text-shadow: 0 4px 20px rgba(255,255,255,0.05);
 }
 
 .progress-wrap {
@@ -492,16 +494,18 @@ body, .view, input, textarea, .btn, .notice, .theme-btn {
   width: 100%;
   height: 10px;
   border-radius: 999px;
-  background: var(--line);
+  background-color: var(--line);
   overflow: hidden;
+  transition: background-color 0.5s ease;
 }
 
 .progress-bar {
   height: 100%;
   width: 100%;
-  background: var(--text);
+  background-color: var(--text);
   transform-origin: left center;
-  transition: transform 1s linear; 
+  /* 叠加过渡：宽度的变化是 1s，颜色随主题切换是 0.5s */
+  transition: transform 1s linear, background-color 0.5s ease; 
 }
 
 /* --- 临近过期警告动效 (<= 3s) --- */
@@ -515,16 +519,13 @@ body, .view, input, textarea, .btn, .notice, .theme-btn {
   animation: flash-danger 1s infinite ease-in-out; 
 }
 
-/* 修复文本裁剪背景导致的长方形块问题 */
 .code.text-danger-flash {
-  background-image: none !important; 
-  -webkit-text-fill-color: var(--danger) !important; 
   color: var(--danger) !important;
   animation: flash-danger 1s infinite ease-in-out; 
 }
 
 .bg-danger {
-  background: var(--danger) !important;
+  background-color: var(--danger) !important;
 }
 
 /* --- 信息与辅助 --- */
