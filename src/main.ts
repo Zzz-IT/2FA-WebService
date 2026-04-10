@@ -6,6 +6,10 @@ import { qs } from "./utils/dom";
 import { generateTotp } from "./utils/otp";
 import { parseOtpAuthUri } from "./utils/otpauth";
 
+// SVG 图标定义
+const ICON_SUN = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`;
+const ICON_MOON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`;
+
 const DEFAULTS: Omit<ParsedOtpAuth, "issuer" | "account" | "secret"> = {
   digits: 6,
   period: 30,
@@ -47,7 +51,7 @@ function renderApp(): void {
           <h1>TOTP 验证器</h1>
           <p class="subtitle">纯前端本地计算，安全可靠</p>
         </div>
-        <button id="themeToggle" class="theme-btn" type="button" aria-label="切换主题">🌙</button>
+        <button id="themeToggle" class="theme-btn" type="button" aria-label="切换主题"></button>
       </header>
 
       <div class="view-container">
@@ -182,7 +186,7 @@ function setMessage(viewId: "setupMessage" | "displayMessage", text: string, typ
   el.textContent = text;
 }
 
-// 提取当前表单状态（适配自定义下拉组件）
+// 提取当前表单状态
 function getCurrentFormState(): Omit<ParsedOtpAuth, "issuer" | "account"> {
   const mainInput = document.querySelector<HTMLTextAreaElement>("#mainInput")!;
   const algoSelectVal = document.querySelector<HTMLDivElement>("#algorithmSelect")!.dataset.value;
@@ -302,10 +306,8 @@ function bindEvents(): void {
   const copyBtn = document.querySelector<HTMLButtonElement>("#copyBtn")!;
   const mainInput = document.querySelector<HTMLTextAreaElement>("#mainInput")!;
 
-  // 初始化自定义下拉框逻辑
   const customSelects = document.querySelectorAll('.custom-select');
   
-  // 点击外部关闭所有下拉框
   document.addEventListener('click', (e) => {
     customSelects.forEach(select => {
       if (!select.contains(e.target as Node)) {
@@ -319,7 +321,6 @@ function bindEvents(): void {
     const options = select.querySelectorAll('.select-option');
 
     trigger.addEventListener('click', () => {
-      // 互斥展开：关闭其他下拉框
       customSelects.forEach(other => {
         if (other !== select) other.classList.remove('open');
       });
@@ -335,7 +336,6 @@ function bindEvents(): void {
     });
   });
 
-  // Modal 弹窗逻辑
   const modalOverlay = document.querySelector<HTMLDivElement>("#settingsModal")!;
   const openSettingsBtn = document.querySelector<HTMLButtonElement>("#openSettingsBtn")!;
   const closeSettingsBtn = document.querySelector<HTMLButtonElement>("#closeSettingsBtn")!;
@@ -348,7 +348,6 @@ function bindEvents(): void {
     } else {
       modalOverlay.classList.remove("open");
       modalOverlay.setAttribute("aria-hidden", "true");
-      // 关闭弹窗时，顺便把可能展开的下拉框收起
       customSelects.forEach(s => s.classList.remove('open'));
     }
   };
@@ -361,7 +360,6 @@ function bindEvents(): void {
     if (e.target === modalOverlay) toggleModal(false);
   });
 
-  // 主题切换
   themeToggle.addEventListener("click", () => {
     themeToggle.classList.add("spin");
     setTimeout(() => themeToggle.classList.remove("spin"), 400);
@@ -369,10 +367,10 @@ function bindEvents(): void {
     const current = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
     const next = current === "dark" ? "light" : "dark";
     setTheme(next);
-    themeToggle.textContent = next === "dark" ? "🌙" : "☀️";
+    // 动态切换 SVG 图标
+    themeToggle.innerHTML = next === "dark" ? ICON_MOON : ICON_SUN;
   });
 
-  // 输入框智能识别
   mainInput.addEventListener("input", () => {
     const val = mainInput.value.trim();
     if (val.startsWith("otpauth://")) {
@@ -435,7 +433,10 @@ function bootstrap(): void {
   renderApp();
   const theme = getStoredTheme();
   setTheme(theme);
-  document.querySelector<HTMLButtonElement>("#themeToggle")!.textContent = theme === "dark" ? "🌙" : "☀️";
+  
+  // 初始化时渲染对应主题的 SVG 图标
+  document.querySelector<HTMLButtonElement>("#themeToggle")!.innerHTML = theme === "dark" ? ICON_MOON : ICON_SUN;
+  
   bindEvents();
   resetForm();
 }
