@@ -139,16 +139,24 @@ body, .view, input, textarea, .btn, .notice, .theme-btn {
   font-size: 1.05rem;
 }
 
+/* 主题切换按钮：变为居中正方/圆角形 */
 .theme-btn {
   border: 1px solid var(--line);
   background: var(--panel);
   backdrop-filter: blur(12px);
   color: var(--text);
   border-radius: 16px;
-  padding: 12px 16px;
+  padding: 12px; /* 等宽内边距 */
   cursor: pointer;
   box-shadow: var(--shadow);
-  font-size: 1.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-btn svg {
+  width: 22px;
+  height: 22px;
 }
 
 .theme-btn:active {
