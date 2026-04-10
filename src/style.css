@@ -1,61 +1,91 @@
 :root {
   color-scheme: light dark;
   --bg: #f3f4f6;
-  --panel: #ffffff;
-  --panel-soft: #f9fafb;
+  --panel: rgba(255, 255, 255, 0.75);
+  --panel-soft: rgba(249, 250, 251, 0.6);
   --text: #111827;
   --muted: #6b7280;
-  --line: #e5e7eb;
+  --line: rgba(229, 231, 235, 0.5);
   --primary: #111827;
   --primary-text: #ffffff;
   --danger: #b91c1c;
   --success: #047857;
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  --blob-1: rgba(52, 211, 153, 0.4);
+  --blob-2: rgba(59, 130, 246, 0.4);
 }
 
 :root[data-theme="dark"] {
   --bg: #0b1020;
-  --panel: #121a2b;
-  --panel-soft: #182235;
+  --panel: rgba(18, 26, 43, 0.75);
+  --panel-soft: rgba(24, 34, 53, 0.6);
   --text: #f3f4f6;
   --muted: #9ca3af;
-  --line: #283245;
+  --line: rgba(40, 50, 69, 0.5);
   --primary: #f3f4f6;
   --primary-text: #111827;
   --danger: #f87171;
   --success: #34d399;
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  --blob-1: rgba(52, 211, 153, 0.2);
+  --blob-2: rgba(59, 130, 246, 0.2);
 }
 
 * {
   box-sizing: border-box;
 }
 
-html,
-body {
+html, body {
   margin: 0;
   min-height: 100%;
-  font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background: var(--bg);
   color: var(--text);
+  overflow-x: hidden;
 }
 
 body {
   padding: 24px;
 }
 
-button,
-input,
-textarea,
-select {
-  font: inherit;
+/* 流动模糊背景 */
+.bg-blobs {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  animation: float 15s infinite ease-in-out alternate;
+}
+
+.blob-1 {
+  top: -10%; left: -10%;
+  width: 50vw; height: 50vw;
+  background: var(--blob-1);
+}
+
+.blob-2 {
+  bottom: -10%; right: -10%;
+  width: 60vw; height: 60vw;
+  background: var(--blob-2);
+  animation-delay: -7.5s;
+}
+
+@keyframes float {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(10vw, 15vh) scale(1.1); }
 }
 
 #app {
-  max-width: 880px;
-  margin: 0 auto;
+  max-width: 600px;
+  margin: 40px auto 0;
+  position: relative;
 }
 
 .app {
@@ -84,21 +114,44 @@ select {
 .theme-btn {
   border: 1px solid var(--line);
   background: var(--panel);
+  backdrop-filter: blur(12px);
   color: var(--text);
   border-radius: 14px;
   padding: 10px 14px;
   cursor: pointer;
   box-shadow: var(--shadow);
+  transition: transform 0.2s;
 }
 
-.card {
+.theme-btn:active {
+  transform: scale(0.95);
+}
+
+/* 视图切换动效 */
+.view-container {
+  position: relative;
+}
+
+.view {
+  display: none;
   background: var(--panel);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--line);
   border-radius: 24px;
   box-shadow: var(--shadow);
   padding: 24px;
-  display: grid;
   gap: 20px;
+  animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.view.active {
+  display: grid;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .notice {
@@ -108,6 +161,7 @@ select {
   padding: 14px 16px;
   color: var(--muted);
   line-height: 1.6;
+  font-size: 0.9rem;
 }
 
 .form-grid {
@@ -122,6 +176,7 @@ select {
 
 .field label {
   font-weight: 600;
+  font-size: 0.95rem;
 }
 
 .field input,
@@ -134,10 +189,19 @@ select {
   border-radius: 16px;
   padding: 14px 16px;
   outline: none;
+  font: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.field input:focus,
+.field textarea:focus,
+.field select:focus {
+  border-color: var(--muted);
+  box-shadow: 0 0 0 2px rgba(107, 114, 128, 0.2);
 }
 
 .field textarea {
-  min-height: 108px;
+  min-height: 80px;
   resize: vertical;
 }
 
@@ -147,10 +211,39 @@ select {
   gap: 16px;
 }
 
+/* 高级设置折叠面板 */
+.advanced-settings {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel-soft);
+  overflow: hidden;
+}
+
+.advanced-settings summary {
+  padding: 14px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+}
+
+.advanced-settings summary::-webkit-details-marker {
+  display: none;
+}
+
+.advanced-settings-content {
+  padding: 0 16px 16px;
+  display: grid;
+  gap: 16px;
+  border-top: 1px solid var(--line);
+  margin-top: 8px;
+  padding-top: 16px;
+}
+
 .actions {
   display: flex;
-  flex-wrap: wrap;
   gap: 12px;
+  margin-top: 8px;
 }
 
 .btn {
@@ -158,8 +251,16 @@ select {
   background: var(--panel-soft);
   color: var(--text);
   border-radius: 14px;
-  padding: 12px 16px;
+  padding: 14px 16px;
+  font-weight: 600;
   cursor: pointer;
+  transition: all 0.2s;
+  flex: 1;
+  font: inherit;
+}
+
+.btn:active {
+  transform: scale(0.98);
 }
 
 .btn.primary {
@@ -168,49 +269,35 @@ select {
   border-color: transparent;
 }
 
+.btn.primary:hover {
+  opacity: 0.9;
+}
+
 .output {
   display: grid;
-  gap: 16px;
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  padding: 20px;
-  background: var(--panel-soft);
+  gap: 24px;
+  text-align: center;
 }
 
 .meta {
-  display: grid;
-  gap: 10px;
-}
-
-.meta-item {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  padding-bottom: 10px;
-  border-bottom: 1px dashed var(--line);
-}
-
-.meta-item:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.meta-label {
   color: var(--muted);
+  font-size: 0.9rem;
 }
 
 .code-wrap {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
+  display: grid;
+  gap: 16px;
+  justify-items: center;
 }
 
 .code {
-  font-size: clamp(2rem, 8vw, 4rem);
-  letter-spacing: 0.18em;
+  font-size: clamp(3rem, 10vw, 4.5rem);
+  letter-spacing: 0.1em;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
+  background: linear-gradient(135deg, var(--text), var(--muted));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .progress-wrap {
@@ -222,11 +309,12 @@ select {
   display: flex;
   justify-content: space-between;
   color: var(--muted);
+  font-size: 0.9rem;
 }
 
 .progress {
   width: 100%;
-  height: 12px;
+  height: 8px;
   border-radius: 999px;
   background: var(--line);
   overflow: hidden;
@@ -237,11 +325,13 @@ select {
   width: 100%;
   background: var(--text);
   transform-origin: left center;
+  transition: transform 1s linear;
 }
 
 .message {
   min-height: 24px;
   font-size: 0.95rem;
+  text-align: left;
 }
 
 .message.error {
@@ -252,35 +342,19 @@ select {
   color: var(--success);
 }
 
-.footer-note {
-  color: var(--muted);
-  font-size: 0.92rem;
-  line-height: 1.7;
-}
-
 small.help {
   color: var(--muted);
+  font-size: 0.85rem;
 }
 
-@media (max-width: 720px) {
-  body {
-    padding: 16px;
+@media (max-width: 600px) {
+  #app {
+    margin-top: 20px;
   }
-
   .card {
-    padding: 18px;
-    border-radius: 20px;
+    padding: 20px;
   }
-
   .row {
     grid-template-columns: 1fr;
-  }
-
-  .topbar {
-    align-items: stretch;
-  }
-
-  .theme-btn {
-    align-self: flex-start;
   }
 }
